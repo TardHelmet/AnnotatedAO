@@ -1,0 +1,116 @@
+:root {
+    --text-color: #2c2c2c;
+    --bg-color: #ffffff;
+    --footnote-color: #8b0000;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Crimson Text', Georgia, serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 1000;
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.fixed-title {
+    text-align: center;
+    font-size: 2rem;
+    margin: 0;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+}
+
+.text-container {
+    max-width: 800px;
+    margin: 120px auto 60px;
+    padding: 0 20px;
+}
+
+.paragraph-designation {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.paragraph-content {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.clickable-sentence {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-sentence:hover {
+    background-color: rgba(139, 0, 0, 0.1);
+}
+
+.clickable-sentence.active {
+    background-color: rgba(139, 0, 0, 0.15);
+}
+
+.footnotes-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    color: var(--footnote-color);
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+.footnote {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border-left: 3px solid var(--footnote-color);
+    display: none;
+}
+
+.footnote.active {
+    display: block;
+}
+
+.navigation {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #e0e0e0;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paragraphs {
+    display: none;
+}
