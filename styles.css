@@ -2,6 +2,8 @@
     --text-color: #2c2c2c;
     --bg-color: #ffffff;
     --footnote-color: #8b0000;
+    --highlight-color: #fff7e6;
+    --animation-duration: 0.3s;
 }
 
 body {
@@ -51,11 +53,15 @@ header {
     background-color: #fff;
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
 }
 
 .clickable-sentence {
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all var(--animation-duration) ease;
+    display: inline-block;
+    position: relative;
+    margin: 0.2em 0;
 }
 
 .clickable-sentence:hover {
@@ -63,7 +69,20 @@ header {
 }
 
 .clickable-sentence.active {
-    background-color: rgba(139, 0, 0, 0.15);
+    background-color: var(--highlight-color);
+    padding: 0.5em;
+    margin: 1em 0;
+    display: block;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+.clickable-sentence.active + .clickable-sentence {
+    margin-top: 2em;
+}
+
+.clickable-sentence.active ~ .clickable-sentence {
+    transform: translateY(2em);
 }
 
 .footnotes-container {
@@ -75,14 +94,20 @@ header {
 }
 
 .footnote {
-    margin-bottom: 1rem;
+    margin: 0;
     padding: 0.5rem;
     border-left: 3px solid var(--footnote-color);
     display: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all var(--animation-duration) ease;
 }
 
 .footnote.active {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
+    margin: 1em 0;
 }
 
 .navigation {
