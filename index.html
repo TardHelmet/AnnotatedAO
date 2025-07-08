@@ -3,29 +3,1028 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anti-Oedipus</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>AnnotatedAO</title>
+    <style>
+        :root {
+            --text-color: #2c2c2c;
+            --bg-color: #fefefe;
+            --toc-bg: rgba(248, 248, 248, 0.95);
+            --highlight-color: #fff7e6;
+            --annotation-color: #8b0000;
+            --connection-color: #cc6666;
+            --shadow-light: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.15);
+            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.2s ease-out;
+            
+            /* Color Palette for Annotations */
+            --color-1: #1a5490; /* Dark Blue */
+            --color-2: #2563eb; /* Blue */
+            --color-3: #0891b2; /* Dark Cyan */
+            --color-4: #06b6d4; /* Cyan */
+            --color-5: #059669; /* Dark Green */
+            --color-6: #10b981; /* Green */
+            --color-7: #7c2d12; /* Dark Red */
+            --color-8: #dc2626; /* Red */
+            --color-9: #92400e; /* Dark Orange */
+            --color-10: #ea580c; /* Orange */
+            --color-11: #6b21a8; /* Dark Purple */
+            --color-12: #9333ea; /* Purple */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Table of Contents */
+        .toc-container {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: var(--toc-bg);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            transform: translateX(-280px);
+            transition: var(--transition-smooth);
+            box-shadow: var(--shadow-medium);
+            border-right: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .toc-container:hover,
+        .toc-container.expanded {
+            transform: translateX(0);
+        }
+
+        .toc-tab {
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 80px;
+            background: var(--toc-bg);
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .toc-content {
+            padding: 2rem 1.5rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .toc-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: var(--annotation-color);
+        }
+
+        .book-selector {
+            margin-bottom: 2rem;
+        }
+
+        .book-selector select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .chapter {
+            margin-bottom: 1rem;
+        }
+
+        .chapter-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition-fast);
+        }
+
+        .chapter-title:hover {
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .sections {
+            margin-left: 1rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .sections.expanded {
+            max-height: 500px;
+        }
+
+        .section {
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: var(--transition-fast);
+            margin: 0.2rem 0;
+        }
+
+        .section:hover {
+            background: rgba(139, 0, 0, 0.08);
+        }
+
+        .section.active {
+            background: var(--highlight-color);
+            font-weight: 500;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 40px;
+            margin-right: 40px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .reading-area {
+            max-width: none;
+            margin: 0;
+            padding: 3rem 4rem;
+            position: relative;
+        }
+
+        .paragraph-container {
+            position: relative;
+            margin: 3rem 0;
+            padding-right: 0;
+            padding-top: 1.5rem;
+            transition: var(--transition-smooth);
+            opacity: 0.3;
+            transform: translateY(20px);
+        }
+
+        .paragraph-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .paragraph-container.focused {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        .paragraph-designation {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+            opacity: 0;
+            transition: var(--transition-fast);
+            position: absolute;
+            top: -1.5rem;
+            left: 0;
+            font-style: italic;
+        }
+
+        .paragraph-container:hover .paragraph-designation {
+            opacity: 0.7;
+        }
+
+        .paragraph-content {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            text-align: justify;
+            max-width: calc(100vw - 400px);
+            text-indent: 2em;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlightable {
+            cursor: pointer;
+            transition: var(--transition-fast);
+            border-radius: 2px;
+            position: relative;
+            padding: 2px 4px;
+            margin: 0 1px;
+        }
+
+        .highlightable:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .highlightable.active {
+            border-radius: 3px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        .highlightable.active::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+
+        /* Color Classes */
+        .color-1 { background: rgba(26, 84, 144, 0.15); color: var(--color-1); }
+        .color-1.active { background: rgba(26, 84, 144, 0.25); box-shadow: 0 0 0 3px rgba(26, 84, 144, 0.3); }
+        .color-1.active::after { border-left: 6px solid var(--color-1); }
+
+        .color-2 { background: rgba(37, 99, 235, 0.15); color: var(--color-2); }
+        .color-2.active { background: rgba(37, 99, 235, 0.25); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
+        .color-2.active::after { border-left: 6px solid var(--color-2); }
+
+        .color-3 { background: rgba(8, 145, 178, 0.15); color: var(--color-3); }
+        .color-3.active { background: rgba(8, 145, 178, 0.25); box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.3); }
+        .color-3.active::after { border-left: 6px solid var(--color-3); }
+
+        .color-4 { background: rgba(6, 182, 212, 0.15); color: var(--color-4); }
+        .color-4.active { background: rgba(6, 182, 212, 0.25); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3); }
+        .color-4.active::after { border-left: 6px solid var(--color-4); }
+
+        .color-5 { background: rgba(5, 150, 105, 0.15); color: var(--color-5); }
+        .color-5.active { background: rgba(5, 150, 105, 0.25); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.3); }
+        .color-5.active::after { border-left: 6px solid var(--color-5); }
+
+        .color-6 { background: rgba(16, 185, 129, 0.15); color: var(--color-6); }
+        .color-6.active { background: rgba(16, 185, 129, 0.25); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); }
+        .color-6.active::after { border-left: 6px solid var(--color-6); }
+
+        .color-7 { background: rgba(124, 45, 18, 0.15); color: var(--color-7); }
+        .color-7.active { background: rgba(124, 45, 18, 0.25); box-shadow: 0 0 0 3px rgba(124, 45, 18, 0.3); }
+        .color-7.active::after { border-left: 6px solid var(--color-7); }
+
+        .color-8 { background: rgba(220, 38, 38, 0.15); color: var(--color-8); }
+        .color-8.active { background: rgba(220, 38, 38, 0.25); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3); }
+        .color-8.active::after { border-left: 6px solid var(--color-8); }
+
+        .color-9 { background: rgba(146, 64, 14, 0.15); color: var(--color-9); }
+        .color-9.active { background: rgba(146, 64, 14, 0.25); box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.3); }
+        .color-9.active::after { border-left: 6px solid var(--color-9); }
+
+        .color-10 { background: rgba(234, 88, 12, 0.15); color: var(--color-10); }
+        .color-10.active { background: rgba(234, 88, 12, 0.25); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.3); }
+        .color-10.active::after { border-left: 6px solid var(--color-10); }
+
+        .color-11 { background: rgba(107, 33, 168, 0.15); color: var(--color-11); }
+        .color-11.active { background: rgba(107, 33, 168, 0.25); box-shadow: 0 0 0 3px rgba(107, 33, 168, 0.3); }
+        .color-11.active::after { border-left: 6px solid var(--color-11); }
+
+        .color-12 { background: rgba(147, 51, 234, 0.15); color: var(--color-12); }
+        .color-12.active { background: rgba(147, 51, 234, 0.25); box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3); }
+        .color-12.active::after { border-left: 6px solid var(--color-12); }
+
+        /* Annotation Panel (Right Sidebar) */
+        .annotation-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: rgba(248, 248, 248, 0.98);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            transform: translateX(350px);
+            transition: var(--transition-smooth);
+            box-shadow: var(--shadow-medium);
+            border-left: 1px solid rgba(0,0,0,0.2);
+            overflow-y: auto;
+        }
+
+        .annotation-panel.active {
+            transform: translateX(0);
+        }
+
+        .annotation-tab {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 80px;
+            background: var(--toc-bg);
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .annotation-content {
+            padding: 2rem 1.5rem;
+            height: 100%;
+        }
+
+        .annotation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--annotation-color);
+            border-bottom: 2px solid var(--annotation-color);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Individual Annotations */
+        .annotation {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow-medium);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: var(--transition-smooth);
+            border-left: 4px solid;
+        }
+
+        .annotation.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .annotation-link {
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .annotation-link:hover {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        /* Remove old margin annotation styles */
+        .annotation-margin {
+            display: none;
+        }
+
+        /* Connection Lines */
+        .connection-line {
+            position: fixed;
+            background: var(--connection-color);
+            height: 2px;
+            opacity: 0;
+            transition: var(--transition-smooth);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .connection-line.active {
+            opacity: 0.8;
+        }
+
+        /* Smooth Scrolling */
+        .scroll-container {
+            scroll-behavior: smooth;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-content {
+                margin-right: 20px;
+            }
+            
+            .paragraph-content {
+                max-width: calc(100vw - 300px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .toc-container {
+                width: 280px;
+                transform: translateX(-240px);
+            }
+            
+            .annotation-panel {
+                width: 300px;
+                transform: translateX(300px);
+            }
+            
+            .annotation-panel.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+            
+            .reading-area {
+                padding: 2rem 1rem;
+            }
+            
+            .paragraph-content {
+                font-size: 1.2rem;
+                max-width: 100%;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--annotation-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1 class="fixed-title">Anti-Oedipus</h1>
-    </header>
-    <main>
-        <div class="text-container">
-            <div class="paragraph-designation"></div>
-            <div class="paragraph-content"></div>
-            <div class="footnotes-container"></div>
-            <div class="navigation">
-                <button id="prevParagraph">Previous</button>
-                <button id="nextParagraph">Next</button>
+    <div class="toc-container">
+        <div class="toc-tab">📖</div>
+        <div class="toc-content">
+            <h2 class="toc-title">Contents</h2>
+            <div class="book-selector">
+                <select id="bookSelect">
+                    <option value="">Select a book...</option>
+                </select>
             </div>
-            <div class="paragraphs" style="display: none;">
-                <p class="text-block">It functions everywhere, sometimes without stopping, sometimes discontinuously. It breathes, it heats, it eats. It shits, it fucks. What a mistake to have ever said the it. Everywhere, it is machines, not at all metaphorically: machines of machines, with their couplings, their connections. An organ-machine is connected with a source-machine: One emits a flux, which the other cuts. The breast is a machine that produces milk, and the mouth, a machine coupled to that one. The mouth of the anorexic hesitates between an eating machine, an anal machine, a talking machine, a breathing machine (asthma attack). This is why we are all tinkerers; each with their own little machines. An organ machine for an energy machine, there are always flux and cuts. Judge Schreber has divine rays in his ass. Solar anus. And rest assured it works: Judge Schreber feels something, produces something, and theorize about it. Something is being produced: effects of machines, not metaphors.</p>
-                <p class="text-block">The stroll of the schizophrenic: it's a better model than the neurotic lying on the couch. A bit of fresh air, a relationship with the outside. For example the walk of Lenz, as reconstructed by Buchner. It is different from moments when Lenz finds himself with his good pastor, who forces him to situate himself socially, in relation to the God of religion, in relation to his father, to his mother. On the contrary, he is in the mountains, under the snow, with other gods or without god at all, without family, without father or mother, with nature. "What does my father want? Can he give me better? Impossible! Leave me alone." Everything is a machine. Celestial machines, the stars or rainbows, alpine machines, which couple with those of his body. Noise Machine Uninterrupted. "He thought that it must be a feeling of endless bliss to be in contact with the profound life of every form, to have a soul for the rocks, metals, water, and plants, to welcome into oneself, as in a dream, every element of nature, like flowers that breathe with the waxing and waning of the moon." To be a chlorophylling-machine or a photosynthesis-machine, or at least slip his body as a part into such machines. Lenz put himself before the distinction 'man/nature', before all the identifications that this distinction conditions. He does not experience nature as nature, but as a process of production. There is no more man nor nature, only process that produces the one within the other and couples the machines together. Producing-machines – desiring-machines everywhere, schizophrenic machines, all generic life: me and not-me, exterior and interior don't mean anything anymore</p>
-                <p class="text-block">Continuing from the stroll of the schizo, when Samuel Beckett's characters decide to go out. We first observe how their varied gaits are themselves a meticulous machine . And then the bicycle: what relationship does the bicycle-as-machine have with the mother-anus machine? "What rest to speak of bicycles and horns. Unfortunately it is not of them I have to speak, but of her who brought me into the world, through the hole in her ass if my memory is correct." We often believe that Oedipus is easy, that it's a given. But that is not so at all: Oedipus presupposes a fantastic repression of desiring-machines. And why, for what purpose? Is it necessary or desirable to do so? And with what? What to put in the Oedipal triangle, with what to form it? A bicycle and my mother's ass, does that do the trick? Aren't there more important questions than these? Given an effect, what machine can produce it? Given a machine, what can it be used for? Can we possibly guess, for instance, what a knife rest is used for if all we are given is a geometrical description of it? Or yet another example: on being presented with a complete machine made up of six stones in the right-hand pocket of my coat (the pocket that serves as the source of the stones), five stones in the right-hand pocket of my trousers, and five in the left-hand pocket (transmission pockets), the last pocket of the coat receiving the stones, used, as the others advance – what is the effect of this circuit of distribution where the mouth inserts itself as a stone-sucking machine? Where in this entire circuit do we find the production of pleasure? At the end of Malone Dies, Lady Pedal takes the schizophrenics out for a stroll, a carriage ride, a boat ride, and a picnic in nature : an infernal machine is preparing.</p>
-            </div>
+            <div id="tocStructure"></div>
         </div>
-    </main>
-    <script src="script.js"></script>
+    </div>
+
+    <div class="annotation-panel">
+        <div class="annotation-tab">📝</div>
+        <div class="annotation-content">
+            <h3 class="annotation-title">Annotations</h3>
+            <div id="annotationList"></div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="reading-area" id="readingArea">
+            <div class="loading">Loading content...</div>
+        </div>
+    </div>
+
+    <script>
+        class AnnotatedReader {
+            constructor() {
+                this.currentBook = null;
+                this.currentSection = null;
+                this.paragraphs = [];
+                this.annotations = new Map();
+                this.scrollPosition = 0;
+                this.focusedParagraph = 0;
+                this.colorIndex = 0; // Track color cycling
+                this.annotationColors = new Map(); // Store annotation -> color mapping
+                
+                this.init();
+            }
+
+            async init() {
+                await this.loadBookStructure();
+                this.setupEventListeners();
+                this.setupSmoothScrolling();
+            }
+
+            async loadBookStructure() {
+                try {
+                    // Simulate loading book structure - replace with actual file system access
+                    const books = await this.discoverBooks();
+                    this.populateBookSelector(books);
+                    
+                    // Auto-load the first book for demo
+                    if (Object.keys(books).length > 0) {
+                        const firstBookKey = Object.keys(books)[0];
+                        document.getElementById('bookSelect').value = firstBookKey;
+                        await this.loadBook(firstBookKey);
+                    }
+                } catch (error) {
+                    console.error('Error loading book structure:', error);
+                    const readingArea = document.getElementById('readingArea');
+                    if (readingArea) {
+                        readingArea.innerHTML = 
+                            '<div class="loading">Error loading content. Please check your file structure.</div>';
+                    }
+                }
+            }
+
+            async discoverBooks() {
+                // This would normally scan the /content/books directory
+                // For demo purposes, returning sample structure
+                return {
+                    'anti-oedipus': {
+                        title: 'Anti-Oedipus',
+                        chapters: {
+                            'chapter-1': {
+                                title: 'Desiring Machines',
+                                sections: {
+                                    'section-1': {
+                                        title: 'The Nature of Desiring-Production',
+                                        paragraphs: ['01.md', '02.md', '03.md']
+                                    },
+                                    'section-2': {
+                                        title: 'The Reality of Desire',
+                                        paragraphs: ['01.md', '02.md']
+                                    }
+                                }
+                            },
+                            'chapter-2': {
+                                title: 'Psychoanalysis and Familialism',
+                                sections: {
+                                    'section-1': {
+                                        title: 'The Holy Family',
+                                        paragraphs: ['01.md', '02.md', '03.md', '04.md']
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
+            populateBookSelector(books) {
+                const select = document.getElementById('bookSelect');
+                Object.entries(books).forEach(([key, book]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = book.title;
+                    select.appendChild(option);
+                });
+            }
+
+            async loadBook(bookKey) {
+                this.currentBook = bookKey;
+                const books = await this.discoverBooks();
+                const book = books[bookKey];
+                
+                this.renderTableOfContents(book);
+                
+                // Load first section by default
+                const firstChapter = Object.keys(book.chapters)[0];
+                const firstSection = Object.keys(book.chapters[firstChapter].sections)[0];
+                await this.loadSection(firstChapter, firstSection);
+            }
+
+            renderTableOfContents(book) {
+                const tocStructure = document.getElementById('tocStructure');
+                tocStructure.innerHTML = '';
+
+                Object.entries(book.chapters).forEach(([chapterKey, chapter]) => {
+                    const chapterDiv = document.createElement('div');
+                    chapterDiv.className = 'chapter';
+                    
+                    const chapterTitle = document.createElement('div');
+                    chapterTitle.className = 'chapter-title';
+                    chapterTitle.textContent = chapter.title;
+                    chapterTitle.onclick = () => this.toggleChapter(chapterDiv);
+                    
+                    const sectionsDiv = document.createElement('div');
+                    sectionsDiv.className = 'sections';
+                    
+                    Object.entries(chapter.sections).forEach(([sectionKey, section]) => {
+                        const sectionDiv = document.createElement('div');
+                        sectionDiv.className = 'section';
+                        sectionDiv.textContent = section.title;
+                        sectionDiv.onclick = () => this.loadSection(chapterKey, sectionKey);
+                        sectionDiv.dataset.chapter = chapterKey;
+                        sectionDiv.dataset.section = sectionKey;
+                        sectionsDiv.appendChild(sectionDiv);
+                    });
+                    
+                    chapterDiv.appendChild(chapterTitle);
+                    chapterDiv.appendChild(sectionsDiv);
+                    tocStructure.appendChild(chapterDiv);
+                });
+            }
+
+            toggleChapter(chapterDiv) {
+                const sections = chapterDiv.querySelector('.sections');
+                sections.classList.toggle('expanded');
+            }
+
+            async loadSection(chapterKey, sectionKey) {
+                this.currentSection = { chapter: chapterKey, section: sectionKey };
+                
+                // Update TOC active state
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                const activeSection = document.querySelector(`[data-chapter="${chapterKey}"][data-section="${sectionKey}"]`);
+                if (activeSection) activeSection.classList.add('active');
+
+                // Load paragraphs for this section
+                const books = await this.discoverBooks();
+                const section = books[this.currentBook].chapters[chapterKey].sections[sectionKey];
+                
+                await this.loadParagraphs(chapterKey, sectionKey, section.paragraphs);
+            }
+
+            async loadParagraphs(chapterKey, sectionKey, paragraphFiles) {
+                const readingArea = document.getElementById('readingArea');
+                readingArea.innerHTML = '';
+                this.paragraphs = [];
+
+                for (let i = 0; i < paragraphFiles.length; i++) {
+                    const paragraphData = await this.loadParagraphFile(chapterKey, sectionKey, paragraphFiles[i]);
+                    this.paragraphs.push(paragraphData);
+                    
+                    const paragraphElement = this.createParagraphElement(paragraphData, i);
+                    readingArea.appendChild(paragraphElement);
+                }
+
+                this.updateParagraphVisibility();
+            }
+
+            async loadParagraphFile(chapterKey, sectionKey, filename) {
+                // Simulate loading paragraph file - replace with actual file loading
+                const sampleContent = this.getSampleParagraph(filename);
+                return {
+                    filename,
+                    content: sampleContent.content,
+                    annotations: sampleContent.annotations,
+                    designation: `${chapterKey.replace('-', ' ')} > ${sectionKey.replace('-', ' ')} > ${filename}`
+                };
+            }
+
+            getSampleParagraph(filename) {
+                const samples = {
+                    '01.md': {
+                        content: 'It functions everywhere, sometimes without stopping, sometimes discontinuously. It breathes, it heats, it eats. It shits, it fucks. What a mistake to have ever said ==the it==. Everywhere, ==it is machines==, not at all metaphorically: machines of machines, with their couplings, their connections.',
+                        annotations: {
+                            'the it': 'Deleuze and Guattari critique the unified subject of psychoanalysis. The "it" (das Es, the id) assumes a centered subjectivity that they reject in favor of multiplicities.',
+                            'it is machines': 'This is the core thesis: everything is machines coupled with other machines, producing flows and breaks. See also [chapter-1/section-2/01.md#desiring-production].'
+                        }
+                    },
+                    '02.md': {
+                        content: 'An ==organ-machine== is connected with a ==source-machine==: One emits a flux, which the other cuts. The breast is a machine that produces milk, and the mouth, a machine coupled to that one. The mouth of the anorexic hesitates between an eating machine, an anal machine, a talking machine, a breathing machine (asthma attack).',
+                        annotations: {
+                            'organ-machine': 'Every organ functions as a machine, not metaphorically but literally in terms of production and connection.',
+                            'source-machine': 'The basic unit of desiring-production: machines that emit flows which are then cut by other machines.'
+                        }
+                    },
+                    '03.md': {
+                        content: 'This is why we are all ==tinkerers==; each with their own little machines. An organ machine for an energy machine, there are always flux and cuts. ==Judge Schreber== has divine rays in his ass. Solar anus. And rest assured it works: Judge Schreber feels something, produces something, and theorize about it.',
+                        annotations: {
+                            'tinkerers': 'Humans are not unified subjects but assemblages constantly reconfiguring their machinic connections.',
+                            'Judge Schreber': 'Daniel Paul Schreber, the German judge whose Memoirs of My Nervous Illness became a key case study for Freud and later for Deleuze and Guattari as an example of productive psychosis.'
+                        }
+                    }
+                };
+                
+                return samples[filename] || {
+                    content: 'Sample paragraph content for ' + filename,
+                    annotations: {}
+                };
+            }
+
+            createParagraphElement(paragraphData, index) {
+                const container = document.createElement('div');
+                container.className = 'paragraph-container';
+                container.dataset.index = index;
+
+                const designation = document.createElement('div');
+                designation.className = 'paragraph-designation';
+                designation.textContent = paragraphData.designation;
+
+                const content = document.createElement('div');
+                content.className = 'paragraph-content';
+                content.innerHTML = this.processContentWithHighlights(paragraphData.content, paragraphData.annotations);
+
+                container.appendChild(designation);
+                container.appendChild(content);
+
+                return container;
+            }
+
+            processContentWithHighlights(content, annotations) {
+                let processedContent = content;
+                
+                // Reset color mapping for new content
+                this.annotationColors.clear();
+                this.colorIndex = 0;
+                
+                Object.keys(annotations).forEach(highlight => {
+                    // Assign color to this annotation
+                    const colorClass = this.getNextColor();
+                    this.annotationColors.set(highlight, colorClass);
+                    
+                    const highlightRegex = new RegExp(`==${highlight}==`, 'g');
+                    processedContent = processedContent.replace(
+                        highlightRegex,
+                        `<span class="highlightable ${colorClass}" data-annotation="${highlight}">${highlight}</span>`
+                    );
+                });
+
+                return processedContent;
+            }
+
+            getNextColor() {
+                const colorClass = `color-${(this.colorIndex % 12) + 1}`;
+                this.colorIndex++;
+                return colorClass;
+            }
+
+            setupEventListeners() {
+                // Book selector
+                document.getElementById('bookSelect').addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        this.loadBook(e.target.value);
+                    }
+                });
+
+                // Highlight clicks
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('highlightable')) {
+                        this.toggleAnnotation(e.target);
+                    }
+                });
+
+                // Handle scroll events - update connection lines
+                let scrollTimeout;
+                window.addEventListener('scroll', () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        this.updateParagraphVisibility();
+                        // Update connection lines if any are active
+                        const activeHighlight = document.querySelector('.highlightable.active');
+                        if (activeHighlight) {
+                            this.createConnectionLine(activeHighlight);
+                        }
+                    }, 10);
+                });
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.scrollToNextParagraph();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.scrollToPreviousParagraph();
+                    }
+                });
+            }
+
+            setupSmoothScrolling() {
+                // Add momentum scrolling behavior
+                let isScrolling = false;
+                let scrollVelocity = 0;
+                
+                window.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    scrollVelocity = e.deltaY * 0.8;
+                    
+                    if (!isScrolling) {
+                        this.smoothScroll();
+                    }
+                }, { passive: false });
+
+                this.smoothScroll = () => {
+                    isScrolling = true;
+                    window.scrollBy(0, scrollVelocity);
+                    scrollVelocity *= 0.95; // Deceleration
+                    
+                    if (Math.abs(scrollVelocity) > 0.5) {
+                        requestAnimationFrame(this.smoothScroll);
+                    } else {
+                        isScrolling = false;
+                    }
+                };
+            }
+
+            updateParagraphVisibility() {
+                const containers = document.querySelectorAll('.paragraph-container');
+                const viewportCenter = window.innerHeight / 2;
+                let closestIndex = 0;
+                let closestDistance = Infinity;
+
+                containers.forEach((container, index) => {
+                    const rect = container.getBoundingClientRect();
+                    const containerCenter = rect.top + rect.height / 2;
+                    const distance = Math.abs(containerCenter - viewportCenter);
+
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestIndex = index;
+                    }
+
+                    // Set visibility based on viewport position
+                    if (rect.top < window.innerHeight && rect.bottom > 0) {
+                        container.classList.add('active');
+                    } else {
+                        container.classList.remove('active');
+                    }
+                });
+
+                // Set focused paragraph
+                containers.forEach((container, index) => {
+                    container.classList.toggle('focused', index === closestIndex);
+                });
+
+                this.focusedParagraph = closestIndex;
+            }
+
+            toggleAnnotation(highlightElement) {
+                const annotation = highlightElement.dataset.annotation;
+                const container = highlightElement.closest('.paragraph-container');
+                const annotationPanel = document.querySelector('.annotation-panel');
+                const annotationList = document.getElementById('annotationList');
+                
+                // Clear existing annotations if clicking a different highlight
+                const wasActive = highlightElement.classList.contains('active');
+                document.querySelectorAll('.highlightable.active').forEach(h => {
+                    h.classList.remove('active');
+                });
+                this.clearConnectionLines();
+
+                if (wasActive) {
+                    // If clicking the same highlight, close the panel
+                    annotationPanel.classList.remove('active');
+                    annotationList.innerHTML = '';
+                    return;
+                }
+
+                // Activate new annotation
+                highlightElement.classList.add('active');
+                
+                const paragraphData = this.paragraphs[parseInt(container.dataset.index)];
+                const annotationText = paragraphData.annotations[annotation];
+                
+                if (annotationText) {
+                    // Show annotation panel first
+                    annotationPanel.classList.add('active');
+                    
+                    // Create annotation element
+                    this.createAnnotationElement(annotationList, annotationText, highlightElement, annotation);
+                    
+                    // Create connection line after panel slides in
+                    setTimeout(() => {
+                        this.createConnectionLine(highlightElement);
+                    }, 400); // Wait for panel animation to complete
+                }
+            }
+
+            createAnnotationElement(annotationList, text, highlightElement, annotationKey) {
+                // Clear previous annotations
+                annotationList.innerHTML = '';
+                
+                // Get the color class from the highlight element
+                const colorClass = Array.from(highlightElement.classList).find(cls => cls.startsWith('color-'));
+                const colorNumber = colorClass ? colorClass.split('-')[1] : '1';
+                const colorVar = `var(--color-${colorNumber})`;
+                
+                const annotation = document.createElement('div');
+                annotation.className = 'annotation';
+                annotation.style.borderLeftColor = colorVar;
+                annotation.style.color = colorVar;
+                
+                // Add annotation key as title
+                const title = document.createElement('div');
+                title.style.fontWeight = '600';
+                title.style.marginBottom = '0.5rem';
+                title.style.fontSize = '0.9rem';
+                title.style.opacity = '0.8';
+                title.textContent = `"${annotationKey}"`;
+                
+                const content = document.createElement('div');
+                
+                // Process annotation links
+                const processedText = text.replace(
+                    /\[([^\]]+)\]/g,
+                    `<span class="annotation-link" style="color: ${colorVar};">$1</span>`
+                );
+                
+                content.innerHTML = processedText;
+                
+                annotation.appendChild(title);
+                annotation.appendChild(content);
+                annotationList.appendChild(annotation);
+                
+                // Show annotation with delay for smooth transition
+                setTimeout(() => {
+                    annotation.classList.add('active');
+                }, 100);
+
+                // Handle annotation links
+                annotation.querySelectorAll('.annotation-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        this.handleAnnotationLink(link.textContent);
+                    });
+                });
+            }
+
+            createConnectionLine(highlightElement) {
+                this.clearConnectionLines();
+                
+                // Get the color from the highlight element
+                const colorClass = Array.from(highlightElement.classList).find(cls => cls.startsWith('color-'));
+                const colorNumber = colorClass ? colorClass.split('-')[1] : '1';
+                const colorVar = `var(--color-${colorNumber})`;
+                
+                const line = document.createElement('div');
+                line.className = 'connection-line active-connection';
+                
+                const highlightRect = highlightElement.getBoundingClientRect();
+                const annotationPanel = document.querySelector('.annotation-panel');
+                
+                if (!annotationPanel) return;
+                
+                const panelRect = annotationPanel.getBoundingClientRect();
+                
+                // Calculate positions
+                const startX = highlightRect.right + 5; // Small offset from highlight
+                const startY = highlightRect.top + (highlightRect.height / 2);
+                const endX = panelRect.left - 5; // Small offset before panel
+                const endY = startY; // Keep horizontal line
+                
+                const distance = endX - startX;
+                
+                // Only draw line if there's positive distance
+                if (distance > 0) {
+                    line.style.left = `${startX}px`;
+                    line.style.top = `${startY}px`;
+                    line.style.width = `${distance}px`;
+                    line.style.height = '2px';
+                    line.style.position = 'fixed';
+                    line.style.zIndex = '999';
+                    line.style.background = colorVar;
+                    line.style.opacity = '0';
+                    line.style.transition = 'opacity 0.3s ease';
+                    
+                    document.body.appendChild(line);
+                    
+                    // Animate in
+                    setTimeout(() => {
+                        line.style.opacity = '0.8';
+                    }, 50);
+                }
+            }
+
+            clearConnectionLines() {
+                document.querySelectorAll('.active-connection').forEach(line => {
+                    line.remove();
+                });
+            }
+
+            handleAnnotationLink(linkText) {
+                // Parse link format: chapter-1/section-2/03.md#annotation-2
+                console.log('Following annotation link:', linkText);
+                // Implement navigation logic here
+            }
+
+            scrollToNextParagraph() {
+                if (this.focusedParagraph < this.paragraphs.length - 1) {
+                    const nextContainer = document.querySelector(`[data-index="${this.focusedParagraph + 1}"]`);
+                    nextContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+
+            scrollToPreviousParagraph() {
+                if (this.focusedParagraph > 0) {
+                    const prevContainer = document.querySelector(`[data-index="${this.focusedParagraph - 1}"]`);
+                    prevContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new AnnotatedReader();
+        });
+    </script>
 </body>
 </html>
